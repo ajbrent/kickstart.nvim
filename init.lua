@@ -123,6 +123,11 @@ require('lazy').setup({
     },
   },
 
+  -- For LSP Client 
+  {
+    'VonHeikemen/lsp-zero.nvim', branch='v3.x'
+  },
+
   -- Useful plugin to show you pending keybinds.
   { 'folke/which-key.nvim', opts = {} },
   {
@@ -572,6 +577,16 @@ require('which-key').register({
   ['<leader>h'] = { 'Git [H]unk' },
 }, { mode = 'v' })
 
+-- Client setup
+local lsp_zero = require('lsp-zero')
+
+lsp_zero.on_attach(function(client, bufnr)
+  -- see :help lsp-zero-keybindings
+  -- to learn the available actions
+  lsp_zero.default_keymaps({buffer = bufnr})
+end)
+
+
 -- mason-lspconfig requires that these setup functions are called in this order
 -- before setting up the servers.
 require('mason').setup()
@@ -586,7 +601,7 @@ require('mason-lspconfig').setup()
 --  If you want to override the default filetypes that your language server will attach to you can
 --  define the property 'filetypes' to the map in question.
 local servers = {
-  -- clangd = {},
+  clangd = {},
   -- gopls = {},
   -- pyright = {},
   -- rust_analyzer = {},
@@ -615,6 +630,17 @@ local mason_lspconfig = require 'mason-lspconfig'
 
 mason_lspconfig.setup {
   ensure_installed = vim.tbl_keys(servers),
+  handlers = {
+    lsp_zero.default_setup,
+    function(server_name)
+      require('lspconfig')[server_name].setup {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = servers[server_name],
+        filetypes = (servers[server_name] or {}).filetypes,
+      }
+    end,
+  },
 }
 
 mason_lspconfig.setup_handlers {
@@ -680,7 +706,20 @@ cmp.setup {
   },
 }
 
-vim.keymap.set('n', '<leader>fe', ':Neotree toggle<cr>', { desc = '[F]ile [E]xplorer' })
+vim.keymap.set('n', '<leader>e', ':Neotree toggle<cr>', { desc = '[E]xplore files', silent = true})
+
+-- Astronvim inspired keymaps
+vim.keymap.set('n', ']b', ':bn<cr>', { desc = '[B]uffer [N]ext', silent = true })
+vim.keymap.set('n', '[b', ':bp<cr>', { desc = '[B]uffer [P]revious', silent = true })
+vim.keymap.set('n', '<C-h>', '<C-w>h', { desc = "Left Window", noremap = true, silent = true })
+vim.keymap.set('n', '<C-l>', '<C-w>l', { desc = "Right Window", noremap = true, silent = true })
+vim.keymap.set('n', '<C-k>', '<C-w>k', { desc = "Up Window", noremap = true, silent = true })
+vim.keymap.set('n', '<C-j>', '<C-w>j', { desc = "Down Window", noremap = true, silent = true })
+vim.keymap.set('n', 'bc', ':bd<cr>', { desc = "[B]uffer [D]elete", noremap = true, silent = true })
+vim.keymap.set('n', '<leader>nh', ':nohlsearch<cr>', { desc = "[N]o [H]ighlight", noremap = true, silent = true })
+vim.o.showtabline = 2
+
+-- Neotree settings
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
