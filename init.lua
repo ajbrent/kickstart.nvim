@@ -88,7 +88,7 @@ require('lazy').setup({
 
       -- Useful status updates for LSP
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim',       opts = {} },
 
       -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
@@ -123,13 +123,13 @@ require('lazy').setup({
     },
   },
 
-  -- For LSP Client 
+  -- For LSP Client
   {
-    'VonHeikemen/lsp-zero.nvim', branch='v3.x'
+    'VonHeikemen/lsp-zero.nvim', branch = 'v3.x'
   },
 
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim', opts = {} },
+  { 'folke/which-key.nvim',  opts = {} },
   {
     -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
@@ -514,7 +514,7 @@ end, 0)
 
 -- [[ Configure LSP ]]
 --  This function gets run when an LSP connects to a particular buffer.
-local on_attach = function(_, bufnr)
+local set_lsp_keymaps = function(_, bufnr)
   -- NOTE: Remember that lua is a real programming language, and as such it is possible
   -- to define small helper and utility functions so you don't have to repeat yourself
   -- many times.
@@ -580,10 +580,11 @@ require('which-key').register({
 -- Client setup
 local lsp_zero = require('lsp-zero')
 
-lsp_zero.on_attach(function(client, bufnr)
+lsp_zero.on_attach(function(_, bufnr)
   -- see :help lsp-zero-keybindings
   -- to learn the available actions
-  lsp_zero.default_keymaps({buffer = bufnr})
+  set_lsp_keymaps(_, bufnr)
+  lsp_zero.buffer_autoformat()
 end)
 
 
@@ -600,8 +601,21 @@ require('mason-lspconfig').setup()
 --
 --  If you want to override the default filetypes that your language server will attach to you can
 --  define the property 'filetypes' to the map in question.
+local util = require 'lspconfig/util'
 local servers = {
-  clangd = {},
+  clangd = {
+    cmd = { 'clangd', '--clang-tidy', '--fallback-style={BasedOnStyle: Google, ColumnLimit: 100}', '--header-insertion=iwyu', '--suggest-missing-includes' },
+    filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'h' },
+    settings = {
+      filetypes = {
+        cpp = ".clang-format"
+      },
+      clangd = {
+        fallbackStyle = "Google",
+        path = util.root_pattern('.git')(vim.fn.expand('%:p:h'))
+      },
+    },
+  },
   -- gopls = {},
   -- pyright = {},
   -- rust_analyzer = {},
@@ -632,27 +646,19 @@ mason_lspconfig.setup {
   ensure_installed = vim.tbl_keys(servers),
   handlers = {
     lsp_zero.default_setup,
-    function(server_name)
-      require('lspconfig')[server_name].setup {
+    clangd = function()
+      require('lspconfig').clangd.setup {
         capabilities = capabilities,
-        on_attach = on_attach,
-        settings = servers[server_name],
-        filetypes = (servers[server_name] or {}).filetypes,
+        single_file_support = false,
+        on_attach = function(_, bufnr)
+          vim.api.nvim_buf_set_option(bufnr, 'tabstop', 2)
+          vim.api.nvim_buf_set_option(bufnr, 'shiftwidth', 2)
+        end,
       }
     end,
   },
 }
 
-mason_lspconfig.setup_handlers {
-  function(server_name)
-    require('lspconfig')[server_name].setup {
-      capabilities = capabilities,
-      on_attach = on_attach,
-      settings = servers[server_name],
-      filetypes = (servers[server_name] or {}).filetypes,
-    }
-  end,
-}
 
 -- [[ Configure nvim-cmp ]]
 -- See `:help cmp`
@@ -706,7 +712,7 @@ cmp.setup {
   },
 }
 
-vim.keymap.set('n', '<leader>e', ':Neotree toggle<cr>', { desc = '[E]xplore files', silent = true})
+vim.keymap.set('n', '<leader>e', ':Neotree toggle<cr>', { desc = '[E]xplore files', silent = true })
 
 -- Astronvim inspired keymaps
 vim.keymap.set('n', ']b', ':bn<cr>', { desc = '[B]uffer [N]ext', silent = true })
