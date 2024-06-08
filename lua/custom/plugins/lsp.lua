@@ -117,7 +117,7 @@ return {
         filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'h' },
       },
       -- gopls = {},
-      -- pyright = {},
+      pyright = {},
       -- rust_analyzer = {},
       -- tsserver = {},
       -- html = { filetypes = { 'html', 'twig', 'hbs'} },
