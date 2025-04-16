@@ -17,6 +17,6 @@ return {
       end,
       group = nvim_metals_group,
     })
-  end
+  end,
 }
 
